@@ -6,7 +6,6 @@ import javafx.scene.Group
 import javafx.scene.Scene
 import javafx.scene.canvas.Canvas
 import javafx.scene.image.Image
-import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.paint.Color
 import javafx.stage.Stage
@@ -21,11 +20,12 @@ abstract class Window(
     private val fps: Long = 15L
 ) : Application() {
     private val canvas = Canvas(width.toDouble(), height.toDouble())
+    private val uiThread = Executors.newSingleThreadScheduledExecutor()
 
-    private val keyRecorder = mutableMapOf<KeyCode, KeyEvent>()
-    private var currentKey: KeyCode? = null
+//    private val keyRecorder = mutableMapOf<KeyCode, KeyEvent>()
+//    private var currentKey: KeyCode? = null
 
-    private val gc = canvas.graphicsContext2D
+    private val gc = canvas.graphicsContext2D!!
 
     //画笔
     protected val painter = Painter(gc)
@@ -48,34 +48,27 @@ abstract class Window(
                 }
 
                 show()
+                onCreate()
                 display()
             }
         }
 
-        scene.onKeyPressed = EventHandler { event ->
-            Thread.currentThread().name = "key-scanner"
-            currentKey = event.code
-            //记录
-            keyRecorder[event.code] = event
-            this@Window.onKeyPressed(event)
-            if (fps == 0L) display()
-        }
+//        scene.onKeyPressed = EventHandler { event ->
+//            Thread.currentThread().name = "key-scanner"
+//            currentKey = event.code
+//            //记录
+//            keyRecorder[event.code] = event
+//            this@Window.onKeyPressed(event)
+//        }
+        scene.onKeyPressed = EventHandler(this::onKeyPressed)
+//        scene.onKeyReleased = EventHandler { event ->
+//            keyRecorder.remove(event.code)
+//            if (currentKey == event.code) {
+//                currentKey = null
+//            }
+//        }
 
-        scene.onKeyReleased = EventHandler { event ->
-            keyRecorder.remove(event.code)
-            if (currentKey == event.code) {
-                currentKey = null
-            }
-        }
-
-        onCreate()
-
-        if (fps != 0L) Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
-            //清屏
-            gc.fill = Color.BLACK
-            gc.fillRect(0.0, 0.0, width.toDouble(), height.toDouble())
-            onDisplay()
-        }, 0, 1000 / fps, TimeUnit.MILLISECONDS)
+        if (fps > 0L) uiThread.scheduleAtFixedRate(this::display, 0, 1000 / fps, TimeUnit.MILLISECONDS)
 
 //        Thread {
 //            Thread.sleep(200)
@@ -90,7 +83,6 @@ abstract class Window(
 //        }.start()
 
         Thread {
-            Thread.sleep(200)
             while (true) {
                 Thread.sleep(if (fps > 0) 1000 / fps else 100)
                 this@Window.onRefresh()
@@ -103,12 +95,14 @@ abstract class Window(
 
     }
 
-    fun display() {
+    private fun display() {
         //清屏
         gc.fill = Color.BLACK
         gc.fillRect(0.0, 0.0, width.toDouble(), height.toDouble())
         onDisplay()
     }
+
+    protected fun uiThread(runnable: () -> Unit) = uiThread.execute(runnable)
 
     abstract fun onCreate()
 

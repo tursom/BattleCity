@@ -10,7 +10,7 @@ class ControlledTank(
     override var x: Int,
     override var y: Int,
     override val painter: Painter,
-    override val movable: Movable.() -> Boolean
+    override val movable: Movable.(x: Int, y: Int) -> Boolean
 ) : View, Tank, Movable {
     override var direction: Direction = Direction.UP
     override val speed: Int = 16
@@ -18,12 +18,20 @@ class ControlledTank(
     override fun move(direction: Direction) {
         if (direction != this.direction) {
             this.direction = direction
-        } else if (movable()) {
-            when (direction) {
-                Direction.UP -> y -= speed
-                Direction.DOWN -> y += speed
-                Direction.LEFT -> x -= speed
-                Direction.RIGHT -> x += speed
+        } else {
+            val x = when (direction) {
+                Direction.LEFT -> x - speed
+                Direction.RIGHT -> x + speed
+                else -> x
+            }
+            val y = when (direction) {
+                Direction.UP -> y - speed
+                Direction.DOWN -> y + speed
+                else -> y
+            }
+            if (movable(x, y)) {
+                this.x = x
+                this.y = y
             }
         }
     }

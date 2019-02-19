@@ -9,7 +9,7 @@ interface Movable : View {
     val speed: Int
     val direction: Direction
 
-    val movable: Movable.() -> Boolean
+    val movable: Movable.(x: Int, y: Int) -> Boolean
 
     fun move(direction: Direction)
 }
